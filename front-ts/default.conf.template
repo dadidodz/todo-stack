@@ -1,0 +1,20 @@
+# The nginx image runs envsubst on /etc/nginx/templates/*.template at startup,
+# writing the result to /etc/nginx/conf.d/. Only defined env vars are replaced,
+# so nginx's own variables ($uri, $backend...) are left alone.
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+
+    # Docker's embedded DNS (user-defined networks only). Re-resolve every 10s so a
+    # recreated back-js container with a new IP is picked up without restarting nginx.
+    resolver 127.0.0.11 valid=10s ipv6=off;
+
+    location /api/ {
+        # A variable in proxy_pass makes nginx resolve the host per request (via resolver)
+        # instead of once at startup.
+        set $backend ${BACKEND_URL};
+        # /api/todos -> /todos (with a variable, proxy_pass can't strip the prefix itself)
+        rewrite ^/api(/.*)$ $1 break;
+        proxy_pass $backend;
+    }
+}

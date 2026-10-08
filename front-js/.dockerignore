@@ -1,0 +1,4 @@
+# Allowlist: the Dockerfile only copies these, so send nothing else to the build
+*
+!default.conf.template
+!public
