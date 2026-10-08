@@ -88,7 +88,7 @@ before exiting.
 | Image     | Before  | After   | How |
 |-----------|---------|---------|-----|
 | back-js   | 292 MB  | 114 MB  | Multi-stage: deps installed with pnpm on `node:24-alpine`, runtime on `alpine:3.24` + Alpine's `nodejs` package, non-root user |
-| fronts    | 92.8 MB | 20.6 MB | `nginx:1.30-alpine-slim`; `front-ts` keeps Node/TypeScript in the discarded build stage |
+| fronts    | 92.8 MB | 21.8 MB | `nginx:1.30-alpine-slim` (+1.2 MB: patched `pcre2`, see the Dockerfiles); `front-ts` keeps Node/TypeScript in the discarded build stage |
 
 ## Project layout
 
@@ -96,6 +96,7 @@ before exiting.
 back-js/    server.js, Dockerfile, config.json (local), config.docker.json (compose), db/init.sql
 front-js/   public/ (index.html, app.js), nginx template, Dockerfile
 front-ts/   src/app.ts -> public/app.js via `pnpm build`, nginx template, Dockerfile
+.github/workflows/   CI, see below
 docker-compose.yml
 .env.example   DB credentials template: copy to .env (gitignored, read by compose)
 ```
@@ -109,6 +110,21 @@ Needs Node 24+, pnpm, and a PostgreSQL with the `todo` user/db matching
 cd back-js
 pnpm install
 pnpm start   # listens on http://localhost:3000
+pnpm test    # API tests: start server.js against that Postgres (run them on Linux/WSL: they check the SIGTERM shutdown)
 ```
 
 The fronts call the relative path `/api`, so they need the nginx proxy: run them with Docker.
+
+## CI (GitHub Actions)
+
+| Workflow   | Runs when                          | Jobs |
+|------------|------------------------------------|------|
+| `back-js`  | `back-js/**` changes, or manually  | `test` (API tests against a throwaway Postgres) -> `lint` (hadolint) -> `build` (build, Trivy scan, push) |
+| `front-js` | `front-js/**` changes, or manually | `lint` -> `build` |
+| `front-ts` | `front-ts/**` changes, or manually | `lint` -> `build` (the image build runs `tsc`, so it is also the type check) |
+| `stack`    | any change, or manually            | `smoke`: `docker compose up`, add a todo through `front-js`, read it back through `front-ts` |
+
+`lint` and `build` live once in the reusable `_image.yml`. The scan fails on HIGH/CRITICAL
+vulnerabilities that have a fix. Images are pushed only from `main`, after the scan, to
+`ghcr.io/<owner>/todo-<service>` with tags `latest` and `sha-<commit>`.
+Manual run: Actions tab -> pick the workflow -> **Run workflow**.

@@ -1,0 +1,21 @@
+name: front-js
+
+on:
+  push:
+    branches: [main]
+    paths: [front-js/**, .github/workflows/front-js.yml, .github/workflows/_image.yml]
+  pull_request:
+    paths: [front-js/**, .github/workflows/front-js.yml, .github/workflows/_image.yml]
+  workflow_dispatch: # "Run workflow" button in the Actions tab
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    uses: ./.github/workflows/_image.yml
+    with:
+      service: front-js
+    permissions:
+      contents: read
+      packages: write

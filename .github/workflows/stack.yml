@@ -1,0 +1,28 @@
+# End-to-end: the whole compose stack, as a user would start it from the README
+name: stack
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: # "Run workflow" button in the Actions tab
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: cp .env.example .env
+      # --wait: returns once the db is healthy and every container is running
+      - run: docker compose up -d --build --wait
+      # Retries: back-js may still be connecting when nginx is already up (502 until then)
+      - name: Add a todo through front-js, read it back through front-ts
+        run: |
+          curl -fsS --retry 10 --retry-all-errors --retry-delay 1 -X POST localhost:8080/api/todos \
+            -H "Content-Type: application/json" -d '{"title":"from CI"}'
+          curl -fsS --retry 10 --retry-all-errors --retry-delay 1 localhost:8081/api/todos | grep '"title":"from CI"'
+      - if: failure()
+        run: docker compose logs
