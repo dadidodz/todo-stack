@@ -4,14 +4,12 @@ services:
   todo-db:
     image: postgres:18
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:?set it in .env (see .env.example)}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set it in .env (see .env.example)}
-      POSTGRES_DB: ${POSTGRES_DB:?set it in .env (see .env.example)}
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: ${POSTGRES_DB:?}
     volumes:
       - db-data:/var/lib/postgresql
     healthcheck:
-      # -h localhost: only the real server listens on TCP, not the temporary init one
-      # $$: expanded by the container's shell, not by compose
       test: ["CMD-SHELL", "pg_isready -h localhost -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 2s
       timeout: 3s
@@ -21,9 +19,8 @@ services:
   back-js:
     build: ./back-js
     image: todo-back-js
-    # The image's config.json has no db settings, so pg falls back to the PG* vars below
     environment:
-      PGHOST: todo-db  # the service name above
+      PGHOST: todo-db
       PGUSER: ${POSTGRES_USER}
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGDATABASE: ${POSTGRES_DB}
@@ -31,12 +28,10 @@ services:
       todo-db:
         condition: service_healthy
     networks: [todo-net]
-    # No ports: only reachable through the fronts' /api proxy
 
   front-js:
     build: ./front-js
     image: todo-front-js
-    # BACKEND_URL defaults to http://back-js:3000 in the image
     ports: ["8080:80"]
     depends_on: [back-js]
     networks: [todo-net]

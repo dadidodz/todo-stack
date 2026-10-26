@@ -46,8 +46,8 @@ Only the two fronts publish ports. `back-js` and `todo-db` are reachable only in
 
 | Service    | Image / build                         | Role |
 |------------|---------------------------------------|------|
-| `todo-db`  | `postgres:18`                         | Stores todos. `back-js/db/init.sql` creates the `todos` table on first start (empty volume only). Has a `pg_isready` healthcheck. |
-| `back-js`  | `back-js/Dockerfile`                  | REST API in plain `node:http` + `pg`. Starts only once the db is healthy. Reads `config.json` (port only), mounted from `config.docker.json`; DB credentials come from `.env` as `PG*` env vars (never baked into the image). |
+| `todo-db`  | `postgres:18`                         | Stores todos. Has a `pg_isready` healthcheck. |
+| `back-js`  | `back-js/Dockerfile`                  | REST API in plain `node:http` + `pg`. Starts only once the db is healthy, and creates the `todos` table if missing. Reads `config.json` (port only), copied from `config.docker.json` into the image; DB credentials come from `.env` as `PG*` env vars (never baked into the image). |
 | `front-js` | `front-js/Dockerfile`                 | Static HTML + vanilla JS served by nginx. |
 | `front-ts` | `front-ts/Dockerfile`                 | Same UI written in TypeScript, compiled with `tsc` in a build stage, then served by nginx. |
 
@@ -56,8 +56,9 @@ Only the two fronts publish ports. `back-js` and `todo-db` are reachable only in
 The pages call `/api/todos` on their own origin (no CORS needed). nginx strips the `/api`
 prefix and forwards to `BACKEND_URL` (default `http://back-js:3000`, override with
 `-e BACKEND_URL=...`). The nginx config is a template filled at container start by the
-image's `envsubst` step. It uses Docker's DNS (`127.0.0.11`) with a 10s TTL, so a recreated
-`back-js` container is picked up without restarting nginx.
+image's `envsubst` step. Its DNS resolver comes from `/etc/resolv.conf` (Docker's `127.0.0.11`
+under compose) with a 10s TTL, so a recreated `back-js` container is picked up without
+restarting nginx. `BACKEND_URL` can also be an `https` URL (used on Render).
 
 ### API
 
@@ -93,18 +94,19 @@ before exiting.
 ## Project layout
 
 ```
-back-js/    server.js, Dockerfile, config.json (local), config.docker.json (compose), db/init.sql
+back-js/    server.js, Dockerfile, config.json (local), config.docker.json (in the image)
 front-js/   public/ (index.html, app.js), nginx template, Dockerfile
 front-ts/   src/app.ts -> public/app.js via `pnpm build`, nginx template, Dockerfile
 .github/workflows/   CI, see below
 docker-compose.yml
 .env.example   DB credentials template: copy to .env (gitignored, read by compose)
+render.yaml    Render Blueprint, see below
 ```
 
 ## Running the API without Docker
 
 Needs Node 24+, pnpm, and a PostgreSQL with the `todo` user/db matching
-`back-js/config.json` and the table from `back-js/db/init.sql`.
+`back-js/config.json` (the API creates its table on startup).
 
 ```sh
 cd back-js
@@ -114,6 +116,28 @@ pnpm test    # API tests: start server.js against that Postgres (run them on Lin
 ```
 
 The fronts call the relative path `/api`, so they need the nginx proxy: run them with Docker.
+
+## Deploy on Render
+
+`render.yaml` is a [Blueprint](https://render.com/docs/blueprint-spec) for Render's free plan,
+built by Render from the same Dockerfiles. Compose stays the way to run it on your own server.
+
+| Render resource  | Type                 | Notes |
+|------------------|----------------------|-------|
+| `todo-db`        | Postgres 18 (free)   | Private network only. **Expires 30 days after creation** (free plan) |
+| `todo-back-js`   | Web service (Docker) | Gets the db through `DATABASE_URL` (internal connection string) |
+| `todo-front-js`  | Web service (Docker) | Proxies `/api` to `BACKEND_URL` |
+| `todo-front-ts`  | Web service (Docker) | Same |
+
+Free web services can't receive private network traffic, so `back-js` is public and the fronts
+reach it through its `https://….onrender.com` URL. Free services sleep after 15 min without
+traffic (about a minute to wake up). Each service rebuilds only when its folder changes, once
+the GitHub checks of the commit are green.
+
+1. Render dashboard -> **New** -> **Blueprint**, pick this repo.
+2. When asked for `BACKEND_URL` (both fronts), enter `https://todo-back-js.onrender.com`.
+3. Once deployed, check `todo-back-js`'s real URL on its page: if Render added a suffix, fix
+   `BACKEND_URL` in both fronts' **Environment** tab.
 
 ## CI (GitHub Actions)
 

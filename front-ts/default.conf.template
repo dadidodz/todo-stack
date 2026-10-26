@@ -1,13 +1,9 @@
-# The nginx image runs envsubst on /etc/nginx/templates/*.template at startup,
-# writing the result to /etc/nginx/conf.d/. Only defined env vars are replaced,
-# so nginx's own variables ($uri, $backend...) are left alone.
 server {
     listen 80;
     root /usr/share/nginx/html;
 
     # DNS servers from /etc/resolv.conf (Docker's 127.0.0.11 in compose, the host's on Render),
     # filled by the image's entrypoint (NGINX_ENTRYPOINT_LOCAL_RESOLVERS in the Dockerfile).
-    # Re-resolve every 10s so a recreated back-js container is picked up without restarting nginx.
     resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
 
     location /api/ {

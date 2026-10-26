@@ -1,0 +1,62 @@
+# Render Blueprint (free plan): same Dockerfiles as docker-compose.yml, built by Render from this repo.
+# Free web services can't receive private network traffic, so the fronts reach back-js through
+# its public https URL. Free Postgres expires 30 days after creation.
+databases:
+  - name: todo-db
+    plan: free
+    region: frankfurt
+    postgresMajorVersion: "18"
+    databaseName: todo
+    user: todo
+    ipAllowList: [] # private network only, like the compose db
+
+services:
+  - type: web
+    name: todo-back-js
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerContext: ./back-js
+    dockerfilePath: ./back-js/Dockerfile
+    buildFilter:
+      paths: [back-js/**]
+    autoDeployTrigger: checksPass # deploy only once GitHub Actions is green
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL # internal URL, no SSL needed
+        fromDatabase:
+          name: todo-db
+          property: connectionString
+
+  - type: web
+    name: todo-front-js
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerContext: ./front-js
+    dockerfilePath: ./front-js/Dockerfile
+    buildFilter:
+      paths: [front-js/**]
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: PORT
+        value: 80
+      - key: BACKEND_URL # asked at Blueprint creation: todo-back-js's URL, e.g. https://todo-back-js.onrender.com
+        sync: false
+
+  - type: web
+    name: todo-front-ts
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerContext: ./front-ts
+    dockerfilePath: ./front-ts/Dockerfile
+    buildFilter:
+      paths: [front-ts/**]
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: PORT
+        value: 80
+      - key: BACKEND_URL
+        sync: false
