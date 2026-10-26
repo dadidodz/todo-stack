@@ -21,11 +21,8 @@ RUN apk add --no-cache nodejs \
 
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-# package.json is needed at runtime: "type": "module" lets node run server.js as ESM
 COPY package.json server.js ./
 
-# config.json is NOT in the image: mount it at runtime, e.g. -v ./config.docker.json:/app/config.json:ro
-# Numeric uid: the runtime can verify "not root" without reading /etc/passwd (k8s runAsNonRoot)
 USER 10001:10001
 EXPOSE 3000
 # Exec form: node runs as PID 1 and receives docker's signals directly

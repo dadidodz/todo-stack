@@ -3,15 +3,12 @@ name: todolist
 services:
   todo-db:
     image: postgres:18
-    # Values come from .env (read by compose); :? aborts if one is missing
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?set it in .env (see .env.example)}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set it in .env (see .env.example)}
       POSTGRES_DB: ${POSTGRES_DB:?set it in .env (see .env.example)}
     volumes:
-      # Postgres 18 keeps its data under /var/lib/postgresql/18/docker (not .../data as in <= 17)
       - db-data:/var/lib/postgresql
-      # Run once, only when db-data is empty
       - ./back-js/db:/docker-entrypoint-initdb.d:ro
     healthcheck:
       # -h localhost: only the real server listens on TCP, not the temporary init one
@@ -21,7 +18,6 @@ services:
       timeout: 3s
       retries: 15
     networks: [todo-net]
-    # No ports: only reachable from todo-net (debug with: docker compose exec todo-db psql -U todo)
 
   back-js:
     build: ./back-js
@@ -56,7 +52,6 @@ services:
     networks: [todo-net]
 
 networks:
-  # User-defined bridge: built-in DNS, so services reach each other by service name
   todo-net:
     driver: bridge
 

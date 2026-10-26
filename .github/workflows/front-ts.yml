@@ -6,13 +6,12 @@ on:
     paths: [front-ts/**, .github/workflows/front-ts.yml, .github/workflows/_image.yml]
   pull_request:
     paths: [front-ts/**, .github/workflows/front-ts.yml, .github/workflows/_image.yml]
-  workflow_dispatch: # "Run workflow" button in the Actions tab
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  # Type errors fail `pnpm build` (tsc) inside the Dockerfile, so the image build is the type check
   image:
     uses: ./.github/workflows/_image.yml
     with:

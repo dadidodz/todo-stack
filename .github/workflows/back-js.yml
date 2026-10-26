@@ -6,7 +6,7 @@ on:
     paths: [back-js/**, .github/workflows/back-js.yml, .github/workflows/_image.yml]
   pull_request:
     paths: [back-js/**, .github/workflows/back-js.yml, .github/workflows/_image.yml]
-  workflow_dispatch: # "Run workflow" button in the Actions tab
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,7 +14,6 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    # Throwaway Postgres matching back-js/config.json (localhost:5432, todo/todo)
     services:
       db:
         image: postgres:18
