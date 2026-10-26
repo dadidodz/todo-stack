@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import pg from 'pg';
 
 const config = JSON.parse(readFileSync(new URL('./config.json', import.meta.url)));
-const pool = new pg.Pool(config.db);
+// DATABASE_URL: set on Render; unset elsewhere, so config.db / PG* vars apply as before
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, ...config.db });
 
 // Idempotent: works on an empty managed database (Render) as well as an existing one
 await pool.query(`CREATE TABLE IF NOT EXISTS todos (
