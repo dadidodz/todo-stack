@@ -5,6 +5,13 @@ import pg from 'pg';
 const config = JSON.parse(readFileSync(new URL('./config.json', import.meta.url)));
 const pool = new pg.Pool(config.db);
 
+// Idempotent: works on an empty managed database (Render) as well as an existing one
+await pool.query(`CREATE TABLE IF NOT EXISTS todos (
+  id    SERIAL PRIMARY KEY,
+  title TEXT    NOT NULL,
+  done  BOOLEAN NOT NULL DEFAULT false
+)`);
+
 function send(res, status, body) {
   if (body === undefined) return res.writeHead(status).end();
   res.writeHead(status, { 'Content-Type': 'application/json' }).end(JSON.stringify(body));

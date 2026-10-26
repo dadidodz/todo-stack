@@ -1,8 +1,8 @@
 # Installed inside the image instead (and Windows binaries wouldn't run on Alpine anyway)
 node_modules
-# Config holds the DB password: mounted at runtime, never baked into a layer
+# config.json holds the DB password: never baked into a layer.
+# config.docker.json has none (credentials come from PG* env vars), so it goes in the image
 config*.json
-# Used by the postgres container, not by the API
-db
+!config.docker.json
 # Secrets come from compose at runtime, never from the build context
 .env

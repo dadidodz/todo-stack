@@ -1,5 +1,5 @@
 // Black-box API tests: run the real server.js against the Postgres in config.json
-// (localhost:5432, todo/todo, table from db/init.sql). Run with: pnpm test
+// (localhost:5432, todo/todo; server.js creates the table). Run with: pnpm test
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';

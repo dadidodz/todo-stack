@@ -1,4 +1,4 @@
-# ---- Stage 1: build (Node + pnpm + TypeScript, thrown away after) ----
+# ---- Stage 1: build (Node + pnpm + TypeScript) ----
 FROM node:24-alpine AS build
 WORKDIR /app
 
@@ -17,8 +17,8 @@ RUN pnpm build
 # ---- Stage 2: runtime (nginx + built files only) ----
 FROM nginx:1.30-alpine-slim
 
-# Default backend address = its service name in docker compose. Override with -e BACKEND_URL=...
 ENV BACKEND_URL=http://back-js:3000
+ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 
 COPY default.conf.template /etc/nginx/templates/
 COPY --from=build /app/public/ /usr/share/nginx/html/

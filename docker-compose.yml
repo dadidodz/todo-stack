@@ -9,7 +9,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:?set it in .env (see .env.example)}
     volumes:
       - db-data:/var/lib/postgresql
-      - ./back-js/db:/docker-entrypoint-initdb.d:ro
     healthcheck:
       # -h localhost: only the real server listens on TCP, not the temporary init one
       # $$: expanded by the container's shell, not by compose
@@ -22,9 +21,7 @@ services:
   back-js:
     build: ./back-js
     image: todo-back-js
-    volumes:
-      # Config is not in the image; it has no db settings, so pg falls back to the PG* vars below
-      - ./back-js/config.docker.json:/app/config.json:ro
+    # The image's config.json has no db settings, so pg falls back to the PG* vars below
     environment:
       PGHOST: todo-db  # the service name above
       PGUSER: ${POSTGRES_USER}

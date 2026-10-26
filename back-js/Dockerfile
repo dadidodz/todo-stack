@@ -22,8 +22,9 @@ RUN apk add --no-cache nodejs \
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json server.js ./
+COPY config.docker.json config.json
 
 USER 10001:10001
 EXPOSE 3000
-# Exec form: node runs as PID 1 and receives docker's signals directly
+
 CMD ["node", "server.js"]

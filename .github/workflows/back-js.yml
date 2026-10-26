@@ -35,10 +35,6 @@ jobs:
         with:
           node-version: 24
       - run: corepack enable pnpm && pnpm install --frozen-lockfile
-      # Service containers start before checkout, so init.sql can't be mounted: apply it with psql
-      - run: psql -h localhost -U todo -d todo -f db/init.sql
-        env:
-          PGPASSWORD: todo
       - run: pnpm test
 
   image:
