@@ -1,0 +1,29 @@
+# Weekly update PRs, one per ecosystem; the CI runs on each PR before you merge
+version: 2
+updates:
+  # Workflows: bumps the pinned SHAs and their "# vX.Y.Z" comments
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Base images (node, alpine, nginx)
+  - package-ecosystem: docker
+    directories: [/back-js, /front-js, /front-ts]
+    schedule:
+      interval: weekly
+    groups:
+      base-images:
+        patterns: ["*"]
+
+  # pnpm lockfiles are handled by the npm ecosystem
+  - package-ecosystem: npm
+    directories: [/back-js, /front-ts]
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ["*"]
