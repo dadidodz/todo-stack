@@ -1,5 +1,5 @@
 # ---- Stage 1: install runtime dependencies (pnpm + caches stay here) ----
-FROM node:24-alpine AS deps
+FROM node:26-alpine AS deps
 WORKDIR /app
 
 # pnpm through corepack; the version comes from "packageManager" in package.json

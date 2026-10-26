@@ -1,5 +1,5 @@
 # ---- Stage 1: build (Node + pnpm + TypeScript) ----
-FROM node:24-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 
 # pnpm through corepack; the version comes from "packageManager" in package.json
